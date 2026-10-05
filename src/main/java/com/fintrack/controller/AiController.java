@@ -7,17 +7,17 @@ import com.fintrack.security.CustomUserPrincipal;
 import com.fintrack.service.AiFinancialContextService;
 import com.fintrack.service.AiService;
 import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 @RestController
 @RequestMapping("/api/ai")
 public class AiController {
 
     private final AiService aiService;
-
-    private final AiFinancialContextService
-            aiFinancialContextService;
+    private final AiFinancialContextService aiFinancialContextService;
 
     public AiController(
             AiService aiService,
@@ -35,8 +35,7 @@ public class AiController {
             CustomUserPrincipal principal
     ) {
 
-        Long userId =
-                principal.getUserId();
+        Long userId = getUserId(principal);
 
         String financialContext =
                 aiFinancialContextService
@@ -57,8 +56,7 @@ public class AiController {
             CustomUserPrincipal principal
     ) {
 
-        Long userId =
-                principal.getUserId();
+        Long userId = getUserId(principal);
 
         String financialContext =
                 aiFinancialContextService
@@ -67,5 +65,20 @@ public class AiController {
         return aiService.generateInsights(
                 financialContext
         );
+    }
+
+    private Long getUserId(
+            CustomUserPrincipal principal
+    ) {
+
+        if (principal == null) {
+
+            throw new ResponseStatusException(
+                    HttpStatus.UNAUTHORIZED,
+                    "Authentication required"
+            );
+        }
+
+        return principal.getUserId();
     }
 }
