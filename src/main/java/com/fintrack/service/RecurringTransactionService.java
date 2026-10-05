@@ -1,5 +1,6 @@
 package com.fintrack.service;
 
+
 import com.fintrack.dto.RecurringTransactionRequest;
 import com.fintrack.dto.RecurringTransactionResponse;
 import com.fintrack.dto.TransactionRequest;
@@ -15,6 +16,7 @@ import com.fintrack.repository.UserRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.fintrack.entity.NotificationType;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -28,13 +30,15 @@ public class RecurringTransactionService {
     private final AccountRepository accountRepository;
     private final CategoryRepository categoryRepository;
     private final UserRepository userRepository;
+    private final NotificationService notificationService;
 
     public RecurringTransactionService(
             RecurringTransactionRepository recurringTransactionRepository,
             TransactionService transactionService,
             AccountRepository accountRepository,
             CategoryRepository categoryRepository,
-            UserRepository userRepository
+            UserRepository userRepository,
+            NotificationService notificationService
     ) {
         this.recurringTransactionRepository =
                 recurringTransactionRepository;
@@ -50,6 +54,9 @@ public class RecurringTransactionService {
 
         this.userRepository =
                 userRepository;
+
+        this.notificationService =
+                notificationService;
     }
 
     // =========================================================
@@ -354,6 +361,18 @@ public class RecurringTransactionService {
                 transactionService.createTransaction(
                         request,
                         recurring.getUser().getId()
+                );
+
+                notificationService.createNotification(
+                        recurring.getUser().getId(),
+                        "Recurring Transaction Added",
+                        String.format(
+                                "Your recurring transaction \"%s\" of ₹%s was automatically added to %s.",
+                                recurring.getDescription(),
+                                recurring.getAmount(),
+                                recurring.getAccount().getName()
+                        ),
+                        NotificationType.RECURRING_TRANSACTION
                 );
 
                 /*
