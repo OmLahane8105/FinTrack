@@ -50,7 +50,7 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/fintrack
       SPRING_DATASOURCE_USERNAME: postgres
 
-      SPRING_PROFILES_ACTIVE: docker
+
 
 
   frontend:
