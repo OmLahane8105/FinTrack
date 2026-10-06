@@ -15,6 +15,8 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import java.util.Optional;
+
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
@@ -41,6 +43,7 @@ class AuthServiceTest {
 
     @BeforeEach
     void setUp() {
+
         user = new User(
                 "Test User",
                 "test@example.com",
@@ -48,9 +51,17 @@ class AuthServiceTest {
         );
 
         setId(user, 1L);
+
         user.setRole(Role.USER);
 
+        /*
+         * Existing successful-login tests represent a user
+         * who has already verified their email.
+         */
+        user.setEmailVerified(true);
+
         refreshToken = new RefreshToken();
+
         refreshToken.setToken("refresh-token-123");
         refreshToken.setUser(user);
         refreshToken.setRevoked(false);
@@ -64,11 +75,12 @@ class AuthServiceTest {
     void login_shouldReturnLoginResponseSuccessfully() {
 
         LoginRequest request = new LoginRequest();
+
         request.setEmail("test@example.com");
         request.setPassword("password123");
 
         when(userRepository.findByEmail("test@example.com"))
-                .thenReturn(java.util.Optional.of(user));
+                .thenReturn(Optional.of(user));
 
         when(passwordEncoder.matches(
                 "password123",
@@ -153,11 +165,12 @@ class AuthServiceTest {
     void login_shouldNormalizeEmailBeforeLookup() {
 
         LoginRequest request = new LoginRequest();
+
         request.setEmail("  TEST@EXAMPLE.COM  ");
         request.setPassword("password123");
 
         when(userRepository.findByEmail("test@example.com"))
-                .thenReturn(java.util.Optional.of(user));
+                .thenReturn(Optional.of(user));
 
         when(passwordEncoder.matches(
                 "password123",
@@ -190,11 +203,12 @@ class AuthServiceTest {
     void login_shouldRejectUnknownEmail() {
 
         LoginRequest request = new LoginRequest();
+
         request.setEmail("unknown@example.com");
         request.setPassword("password123");
 
         when(userRepository.findByEmail("unknown@example.com"))
-                .thenReturn(java.util.Optional.empty());
+                .thenReturn(Optional.empty());
 
         IllegalArgumentException exception =
                 assertThrows(
@@ -225,11 +239,12 @@ class AuthServiceTest {
     void login_shouldRejectInvalidPassword() {
 
         LoginRequest request = new LoginRequest();
+
         request.setEmail("test@example.com");
         request.setPassword("wrong-password");
 
         when(userRepository.findByEmail("test@example.com"))
-                .thenReturn(java.util.Optional.of(user));
+                .thenReturn(Optional.of(user));
 
         when(passwordEncoder.matches(
                 "wrong-password",
@@ -260,6 +275,54 @@ class AuthServiceTest {
     }
 
     // =========================================================
+    // UNVERIFIED EMAIL
+    // =========================================================
+
+    @Test
+    void login_shouldRejectUnverifiedEmail() {
+
+        user.setEmailVerified(false);
+
+        LoginRequest request = new LoginRequest();
+
+        request.setEmail("test@example.com");
+        request.setPassword("password123");
+
+        when(userRepository.findByEmail("test@example.com"))
+                .thenReturn(Optional.of(user));
+
+        when(passwordEncoder.matches(
+                "password123",
+                "encoded-password"
+        )).thenReturn(true);
+
+        IllegalArgumentException exception =
+                assertThrows(
+                        IllegalArgumentException.class,
+                        () -> authService.login(request)
+                );
+
+        assertEquals(
+                "Please verify your email before logging in",
+                exception.getMessage()
+        );
+
+        verify(userRepository)
+                .findByEmail("test@example.com");
+
+        verify(passwordEncoder)
+                .matches(
+                        "password123",
+                        "encoded-password"
+                );
+
+        verifyNoInteractions(
+                jwtService,
+                refreshTokenService
+        );
+    }
+
+    // =========================================================
     // TOKEN CREATION ORDER
     // =========================================================
 
@@ -267,11 +330,12 @@ class AuthServiceTest {
     void login_shouldGenerateAccessTokenAndRefreshTokenForSameUser() {
 
         LoginRequest request = new LoginRequest();
+
         request.setEmail("test@example.com");
         request.setPassword("password123");
 
         when(userRepository.findByEmail("test@example.com"))
-                .thenReturn(java.util.Optional.of(user));
+                .thenReturn(Optional.of(user));
 
         when(passwordEncoder.matches(
                 "password123",
@@ -301,15 +365,27 @@ class AuthServiceTest {
                 .createRefreshToken(user);
     }
 
-    private static void setId(Object entity, Long id) {
+    // =========================================================
+    // REFLECTION HELPER
+    // =========================================================
+
+    private static void setId(
+            Object entity,
+            Long id
+    ) {
+
         try {
+
             var field =
-                    entity.getClass().getDeclaredField("id");
+                    entity.getClass()
+                            .getDeclaredField("id");
 
             field.setAccessible(true);
+
             field.set(entity, id);
 
         } catch (ReflectiveOperationException e) {
+
             throw new RuntimeException(e);
         }
     }

@@ -1,6 +1,5 @@
 package com.fintrack.entity;
 
-import com.fintrack.entity.Role;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -40,15 +39,31 @@ public class User {
     @Column(nullable = false)
     private LocalDateTime createdAt;
 
-    public User(String name, String email, String hashedPassword) {
+    @Column(nullable = false)
+    private boolean emailVerified = false;
+
+    @Column(length = 100)
+    private String verificationToken;
+
+    private LocalDateTime verificationTokenExpiry;
+
+    private LocalDateTime verificationEmailSentAt;
+
+    public User(
+            String name,
+            String email,
+            String hashedPassword
+    ) {
         this.name = name;
         this.email = email;
         this.password = hashedPassword;
         this.role = Role.USER;
+        this.emailVerified = false;
     }
 
     @PrePersist
     public void prePersist() {
+
         if (createdAt == null) {
             createdAt = LocalDateTime.now();
         }
@@ -58,4 +73,3 @@ public class User {
         }
     }
 }
-

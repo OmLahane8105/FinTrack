@@ -83,6 +83,12 @@ public class OAuth2AuthenticationSuccessHandler
                             passwordEncoder.encode(randomPassword)
                     );
 
+                    /*
+                     * Google has already authenticated ownership
+                     * of this Google account.
+                     */
+                    newUser.setEmailVerified(true);
+
                     return userRepository.save(newUser);
                 });
 

@@ -13,18 +13,26 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final EmailVerificationService emailVerificationService;
 
     public UserService(
             UserRepository userRepository,
-            PasswordEncoder passwordEncoder) {
-
+            PasswordEncoder passwordEncoder,
+            EmailVerificationService emailVerificationService
+    ) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
+        this.emailVerificationService = emailVerificationService;
     }
 
+    @Transactional
     public UserResponse createUser(UserRegisterRequest request) {
 
-        if (userRepository.findByEmail(request.getEmail()).isPresent()) {
+        String email = request.getEmail()
+                .toLowerCase()
+                .trim();
+
+        if (userRepository.findByEmail(email).isPresent()) {
             throw new IllegalArgumentException(
                     "Email already registered"
             );
@@ -34,12 +42,17 @@ public class UserService {
                 passwordEncoder.encode(request.getPassword());
 
         User user = new User(
-                request.getName(),
-                request.getEmail(),
+                request.getName().trim(),
+                email,
                 hashedPassword
         );
 
+        user.setEmailVerified(false);
+
         User savedUser = userRepository.save(user);
+
+        emailVerificationService
+                .createAndSendVerificationEmail(savedUser);
 
         return new UserResponse(
                 savedUser.getId(),
@@ -53,11 +66,10 @@ public class UserService {
 
         User user = userRepository
                 .findById(userId)
-                .orElseThrow(() -> {
-                            throw new IllegalArgumentException(
-                                    "User not found"
-                            );
-                        }
+                .orElseThrow(() ->
+                        new IllegalArgumentException(
+                                "User not found"
+                        )
                 );
 
         return new UserResponse(

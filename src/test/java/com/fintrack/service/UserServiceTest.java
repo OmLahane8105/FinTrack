@@ -26,6 +26,9 @@ class UserServiceTest {
     @Mock
     private PasswordEncoder passwordEncoder;
 
+    @Mock
+    private EmailVerificationService emailVerificationService;
+
     @InjectMocks
     private UserService userService;
 
@@ -33,6 +36,7 @@ class UserServiceTest {
 
     @BeforeEach
     void setUp() {
+
         user = new User(
                 "Test User",
                 "test@example.com",
@@ -40,6 +44,8 @@ class UserServiceTest {
         );
 
         setId(user, 1L);
+
+        user.setEmailVerified(false);
     }
 
     // =========================================================
@@ -69,8 +75,17 @@ class UserServiceTest {
                 userService.createUser(request);
 
         assertNotNull(response);
-        assertEquals(1L, response.getId());
-        assertEquals("Test User", response.getName());
+
+        assertEquals(
+                1L,
+                response.getId()
+        );
+
+        assertEquals(
+                "Test User",
+                response.getName()
+        );
+
         assertEquals(
                 "test@example.com",
                 response.getEmail()
@@ -84,6 +99,9 @@ class UserServiceTest {
 
         verify(userRepository)
                 .save(any(User.class));
+
+        verify(emailVerificationService)
+                .createAndSendVerificationEmail(user);
     }
 
     @Test
@@ -118,6 +136,9 @@ class UserServiceTest {
                                 .equals("test@example.com")
                 )
         );
+
+        verify(emailVerificationService)
+                .createAndSendVerificationEmail(any(User.class));
     }
 
     @Test
@@ -151,6 +172,8 @@ class UserServiceTest {
 
         verify(userRepository, never())
                 .save(any(User.class));
+
+        verifyNoInteractions(emailVerificationService);
     }
 
     // =========================================================
@@ -167,11 +190,17 @@ class UserServiceTest {
                 userService.getUserById(1L);
 
         assertNotNull(response);
-        assertEquals(1L, response.getId());
+
+        assertEquals(
+                1L,
+                response.getId()
+        );
+
         assertEquals(
                 "Test User",
                 response.getName()
         );
+
         assertEquals(
                 "test@example.com",
                 response.getEmail()
@@ -206,9 +235,13 @@ class UserServiceTest {
     // HELPER
     // =========================================================
 
-    private static void setId(Object entity, Long id) {
+    private static void setId(
+            Object entity,
+            Long id
+    ) {
 
         try {
+
             var field =
                     entity.getClass()
                             .getDeclaredField("id");
@@ -217,6 +250,7 @@ class UserServiceTest {
             field.set(entity, id);
 
         } catch (ReflectiveOperationException e) {
+
             throw new RuntimeException(e);
         }
     }

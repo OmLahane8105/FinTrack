@@ -1,9 +1,8 @@
 package com.fintrack.service;
 
-import com.fintrack.entity.RefreshToken;
-import com.fintrack.entity.Role;
 import com.fintrack.dto.LoginRequest;
 import com.fintrack.dto.LoginResponse;
+import com.fintrack.entity.RefreshToken;
 import com.fintrack.entity.User;
 import com.fintrack.repository.UserRepository;
 import com.fintrack.security.JwtService;
@@ -33,7 +32,11 @@ public class AuthService {
     public LoginResponse login(LoginRequest request) {
 
         User user = userRepository
-                .findByEmail(request.getEmail().toLowerCase().trim())
+                .findByEmail(
+                        request.getEmail()
+                                .toLowerCase()
+                                .trim()
+                )
                 .orElseThrow(() ->
                         new IllegalArgumentException(
                                 "Invalid email or password"
@@ -46,6 +49,12 @@ public class AuthService {
         )) {
             throw new IllegalArgumentException(
                     "Invalid email or password"
+            );
+        }
+
+        if (!user.isEmailVerified()) {
+            throw new IllegalArgumentException(
+                    "Please verify your email before logging in"
             );
         }
 

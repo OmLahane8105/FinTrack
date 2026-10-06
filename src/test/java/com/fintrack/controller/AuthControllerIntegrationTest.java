@@ -10,6 +10,7 @@ import com.fintrack.entity.User;
 import com.fintrack.security.CustomUserDetailsService;
 import com.fintrack.security.JwtService;
 import com.fintrack.service.AuthService;
+import com.fintrack.service.EmailVerificationService;
 import com.fintrack.service.RefreshTokenService;
 import com.fintrack.service.UserService;
 
@@ -26,6 +27,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(
@@ -54,6 +56,9 @@ class AuthControllerIntegrationTest {
     private JwtService jwtService;
 
     @MockitoBean
+    private EmailVerificationService emailVerificationService;
+
+    @MockitoBean
     private CustomUserDetailsService userDetailsService;
 
     @Test
@@ -66,8 +71,9 @@ class AuthControllerIntegrationTest {
                         "test@example.com"
                 );
 
-        when(userService.createUser(any(UserRegisterRequest.class)))
-                .thenReturn(response);
+        when(userService.createUser(
+                any(UserRegisterRequest.class)
+        )).thenReturn(response);
 
         mockMvc.perform(
                         post("/api/auth/register")
@@ -82,8 +88,10 @@ class AuthControllerIntegrationTest {
                 )
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(1))
-                .andExpect(jsonPath("$.name").value("Test User"))
-                .andExpect(jsonPath("$.email").value("test@example.com"));
+                .andExpect(jsonPath("$.name")
+                        .value("Test User"))
+                .andExpect(jsonPath("$.email")
+                        .value("test@example.com"));
     }
 
     @Test
@@ -101,8 +109,9 @@ class AuthControllerIntegrationTest {
                         "USER"
                 );
 
-        when(authService.login(any(LoginRequest.class)))
-                .thenReturn(response);
+        when(authService.login(
+                any(LoginRequest.class)
+        )).thenReturn(response);
 
         mockMvc.perform(
                         post("/api/auth/login")
@@ -115,14 +124,74 @@ class AuthControllerIntegrationTest {
                                         """)
                 )
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.accessToken").value("access-token"))
-                .andExpect(jsonPath("$.refreshToken").value("refresh-token"))
-                .andExpect(jsonPath("$.tokenType").value("Bearer"))
-                .andExpect(jsonPath("$.expiresIn").value(900000))
-                .andExpect(jsonPath("$.userId").value(1))
-                .andExpect(jsonPath("$.name").value("Test User"))
-                .andExpect(jsonPath("$.email").value("test@example.com"))
-                .andExpect(jsonPath("$.role").value("USER"));
+                .andExpect(jsonPath("$.accessToken")
+                        .value("access-token"))
+                .andExpect(jsonPath("$.refreshToken")
+                        .value("refresh-token"))
+                .andExpect(jsonPath("$.tokenType")
+                        .value("Bearer"))
+                .andExpect(jsonPath("$.expiresIn")
+                        .value(900000))
+                .andExpect(jsonPath("$.userId")
+                        .value(1))
+                .andExpect(jsonPath("$.name")
+                        .value("Test User"))
+                .andExpect(jsonPath("$.email")
+                        .value("test@example.com"))
+                .andExpect(jsonPath("$.role")
+                        .value("USER"));
+    }
+
+    @Test
+    void verifyEmail_shouldReturnSuccess() throws Exception {
+
+        doNothing()
+                .when(emailVerificationService)
+                .verifyEmail("valid-token");
+
+        mockMvc.perform(
+                        get("/api/auth/verify-email")
+                                .param(
+                                        "token",
+                                        "valid-token"
+                                )
+                )
+                .andExpect(status().isOk())
+                .andExpect(
+                        jsonPath("$.message")
+                                .value(
+                                        "Email verified successfully"
+                                )
+                );
+    }
+
+    @Test
+    void resendVerification_shouldReturnGenericResponse()
+            throws Exception {
+
+        doNothing()
+                .when(emailVerificationService)
+                .resendVerificationEmail(
+                        "test@example.com"
+                );
+
+        mockMvc.perform(
+                        post(
+                                "/api/auth/resend-verification"
+                        )
+                                .param(
+                                        "email",
+                                        "test@example.com"
+                                )
+                )
+                .andExpect(status().isOk())
+                .andExpect(
+                        jsonPath("$.message")
+                                .value(
+                                        "If an account exists with this email, " +
+                                                "a verification email has been sent."
+                                )
+                );
     }
 
     @Test
@@ -137,8 +206,11 @@ class AuthControllerIntegrationTest {
 
         user.setId(1L);
 
-        RefreshToken storedToken = mock(RefreshToken.class);
-        RefreshToken newToken = mock(RefreshToken.class);
+        RefreshToken storedToken =
+                mock(RefreshToken.class);
+
+        RefreshToken newToken =
+                mock(RefreshToken.class);
 
         when(storedToken.getUser())
                 .thenReturn(user);
@@ -171,16 +243,29 @@ class AuthControllerIntegrationTest {
                                         """)
                 )
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.accessToken").value("new-access-token"))
-                .andExpect(jsonPath("$.refreshToken").value("new-refresh-token"))
-                .andExpect(jsonPath("$.tokenType").value("Bearer"))
-                .andExpect(jsonPath("$.expiresIn").value(900000));
+                .andExpect(
+                        jsonPath("$.accessToken")
+                                .value("new-access-token")
+                )
+                .andExpect(
+                        jsonPath("$.refreshToken")
+                                .value("new-refresh-token")
+                )
+                .andExpect(
+                        jsonPath("$.tokenType")
+                                .value("Bearer")
+                )
+                .andExpect(
+                        jsonPath("$.expiresIn")
+                                .value(900000)
+                );
     }
 
     @Test
     void logout_shouldReturnNoContent() throws Exception {
 
-        doNothing().when(refreshTokenService)
+        doNothing()
+                .when(refreshTokenService)
                 .revokeToken("refresh-token");
 
         mockMvc.perform(
