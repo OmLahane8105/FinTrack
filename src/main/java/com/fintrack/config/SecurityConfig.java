@@ -173,6 +173,11 @@ public class SecurityConfig {
                                 "/error"
                         ).permitAll()
 
+                        // Health check endpoint
+                        .requestMatchers(
+                                "/api/health"
+                        ).permitAll()
+
                         // Admin endpoints
                         .requestMatchers(
                                 "/api/admin/**"
