@@ -11,6 +11,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
 import java.util.stream.Collectors;
@@ -194,16 +195,17 @@ public class GlobalExceptionHandler {
      *
      * Do not expose internal exception details to the frontend.
      */
-    @ExceptionHandler(Exception.class)
-    public ResponseEntity<ApiErrorResponse> handleGeneralException(
-            Exception exception,
+    @ExceptionHandler(ResponseStatusException.class)
+    public ResponseEntity<ApiErrorResponse> handleResponseStatusException(
+            ResponseStatusException exception,
             HttpServletRequest request
     ) {
+        HttpStatus status = HttpStatus.valueOf(exception.getStatusCode().value());
 
         return buildResponse(
-                HttpStatus.INTERNAL_SERVER_ERROR,
-                "Internal Server Error",
-                "An unexpected error occurred",
+                status,
+                status.getReasonPhrase(),
+                exception.getReason(),
                 request
         );
     }
