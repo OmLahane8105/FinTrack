@@ -7,6 +7,9 @@ import org.junit.jupiter.api.Test;
 import org.springframework.ai.chat.client.ChatClient;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.*;
 
 class AiServiceTest {
@@ -38,6 +41,10 @@ class AiServiceTest {
                         new ObjectMapper()
                 );
     }
+
+    // ============================================================
+    // AI CHAT TESTS
+    // ============================================================
 
     @Test
     void chat_shouldReturnValidationMessage_whenMessageIsBlank() {
@@ -195,10 +202,17 @@ class AiServiceTest {
         );
     }
 
+    // ============================================================
+    // AI FINANCIAL INSIGHTS TESTS
+    // ============================================================
+
     @Test
     void generateInsights_shouldParseValidJson() {
 
         when(chatClient.prompt())
+                .thenReturn(requestSpec);
+
+        when(requestSpec.options(any()))
                 .thenReturn(requestSpec);
 
         when(requestSpec.user((String) any()))
@@ -209,20 +223,20 @@ class AiServiceTest {
 
         when(responseSpec.content())
                 .thenReturn("""
-                        {
-                          "summary": "Your spending is higher than your income this month.",
-                          "insights": [
-                            "Expenses are ₹37000.",
-                            "Savings are negative.",
-                            "Entertainment is a major expense."
-                          ],
-                          "recommendations": [
-                            "Reduce discretionary spending.",
-                            "Review your entertainment expenses.",
-                            "Create a monthly spending limit."
-                          ]
-                        }
-                        """);
+                    {
+                      "summary": "Your spending is higher than your income this month.",
+                      "insights": [
+                        "Expenses are ₹37000.",
+                        "Savings are negative.",
+                        "Entertainment is a major expense."
+                      ],
+                      "recommendations": [
+                        "Reduce discretionary spending.",
+                        "Review your entertainment expenses.",
+                        "Create a monthly spending limit."
+                      ]
+                    }
+                    """);
 
         AiInsightsResponse result =
                 aiService.generateInsights(
@@ -245,6 +259,21 @@ class AiServiceTest {
                 3,
                 result.getRecommendations().size()
         );
+
+        verify(chatClient, times(1))
+                .prompt();
+
+        verify(requestSpec, times(1))
+                .options(any());
+
+        verify(requestSpec, times(1))
+                .user((String) any());
+
+        verify(requestSpec, times(1))
+                .call();
+
+        verify(responseSpec, times(1))
+                .content();
     }
 
     @Test
@@ -277,6 +306,9 @@ class AiServiceTest {
         when(chatClient.prompt())
                 .thenReturn(requestSpec);
 
+        when(requestSpec.options(any()))
+                .thenReturn(requestSpec);
+
         when(requestSpec.user((String) any()))
                 .thenReturn(requestSpec);
 
@@ -297,6 +329,45 @@ class AiServiceTest {
 
         assertEquals(
                 "FinTrack AI is temporarily unavailable.",
+                result.getSummary()
+        );
+
+        assertTrue(
+                result.getInsights().isEmpty()
+        );
+
+        assertTrue(
+                result.getRecommendations().isEmpty()
+        );
+    }
+
+    @Test
+    void generateInsights_shouldReturnFallback_whenGeminiReturnsEmptyResponse() {
+
+        when(chatClient.prompt())
+                .thenReturn(requestSpec);
+
+        when(requestSpec.options(any()))
+                .thenReturn(requestSpec);
+
+        when(requestSpec.user((String) any()))
+                .thenReturn(requestSpec);
+
+        when(requestSpec.call())
+                .thenReturn(responseSpec);
+
+        when(responseSpec.content())
+                .thenReturn("   ");
+
+        AiInsightsResponse result =
+                aiService.generateInsights(
+                        "Income: ₹50000"
+                );
+
+        assertNotNull(result);
+
+        assertEquals(
+                "No insights could be generated right now.",
                 result.getSummary()
         );
 
