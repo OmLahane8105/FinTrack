@@ -325,3 +325,51 @@ Potential improvements include:
 * Expanded analytics
 * More advanced AI financial planning features
 * Additional deployment monitoring and observability
+
+
+## Future Improvements
+
+* Add more integration and end-to-end tests for critical production workflows.
+* Expand financial analytics with advanced trends, forecasting, and comparisons.
+* Add more notification and reminder scenarios.
+* Improve application observability with enhanced monitoring and structured metrics.
+* Expand FinTrack AI with more personalized financial-planning capabilities.
+
+## Acknowledgements
+
+FinTrack was built using and inspired by the following technologies and services:
+
+* Spring Boot
+* Spring Security
+* Spring Data JPA
+* Hibernate
+* Spring AI
+* Google Gemini
+* PostgreSQL
+* Neon
+* Docker
+* JUnit 5
+* Mockito
+* Apache PDFBox
+* Render
+* Brevo
+
+## Project Status
+
+FinTrack is a completed full-stack personal finance project with production deployment, authentication, financial management features, reporting, exports, notifications, and AI-powered financial analysis.
+
+The backend currently has 303 automated tests passing with zero failures.
+
+## Live Application
+
+FinTrack is deployed with a separate production frontend and backend environment.
+
+## Closing Note
+
+FinTrack was built as a practical portfolio project to bring together backend development, security, database design, REST APIs, cloud deployment, testing, and AI integration into one complete application.
+
+The project focuses on building a realistic financial platform rather than a simple CRUD application, with an emphasis on secure user data, maintainable architecture, and production-ready workflows.
+
+---
+
+Built with Java, Spring Boot, PostgreSQL, Spring Security, Spring AI, Google Gemini, Docker, and other open-source technologies.
