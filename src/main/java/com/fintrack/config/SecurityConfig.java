@@ -1,5 +1,6 @@
 package com.fintrack.config;
 
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fintrack.exception.ApiErrorResponse;
 import com.fintrack.security.CustomUserDetailsService;
@@ -53,6 +54,7 @@ public class SecurityConfig {
         this.oauth2SuccessHandler = oauth2SuccessHandler;
         this.oauth2FailureHandler = oauth2FailureHandler;
         this.passwordEncoder = passwordEncoder;
+        objectMapper.registerModule(new JavaTimeModule());
         this.objectMapper = objectMapper;
         this.frontendUrl = frontendUrl;
     }
