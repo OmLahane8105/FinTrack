@@ -25,4 +25,4 @@ COPY --from=build /app/target/fintrack-0.0.1-SNAPSHOT.jar app.jar
 
 EXPOSE 8080
 
-ENTRYPOINT ["java", "-jar", "app.jar"]
+ENTRYPOINT ["java", "-XX:MaxRAMPercentage=50.0", "-XX:InitialRAMPercentage=15.0", "-XX:+UseSerialGC", "-jar", "app.jar"]
